@@ -126,6 +126,29 @@ mydata@meta.data$hpca.fine <- hpca.fine$pruned.labels
 mydata <- SetIdent(mydata, value = "hpca.fine")
 DimPlot(mydata, label = T , repel = T, label.size = 3) + NoLegend()
 
+### DIFFERENTIAL EXPRESSION TESTING
+
+astrocyteVStcell.de.markers <- FindMarkers(mydata, ident.1 = "Astrocyte:Embryonic_stem_cell-derived", ident.2 = "T_cell:CCR10-CLA+1,25(OH)2_vit_D3/IL-12")
+# view results
+head(astrocyteVStcell.de.markers)
+
+library(ggplot2)
+# The basic scatter plot: x is "log2FoldChange", y is "pvalue"
+ggplot(data=astrocyteVStcell.de.markers, aes(x=avg_log2FC, y=p_val)) + geom_point()
+p <- ggplot(data=astrocyteVStcell.de.markers, aes(x=avg_log2FC, y=-log10(p_val))) + geom_point()
+p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
+
+# add a column of expression labelling
+astrocyteVStcell.de.markers$diffexpressed <- "NO"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "UP" 
+astrocyteVStcell.de.markers$diffexpressed[astrocyteVStcell.de.markers$avg_log2FC > 0.6 & astrocyteVStcell.de.markers$p_val < 0.05] <- "UP"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+astrocyteVStcell.de.markers$diffexpressed[astrocyteVStcell.de.markers$avg_log2FC < -0.6 & astrocyteVStcell.de.markers$p_val < 0.05] <- "DOWN"
+#adding nemes as the rownames
+p <- ggplot(data=astrocyteVStcell.de.markers, aes(x=avg_log2FC, y=-log10(p_val), col=diffexpressed, label=rownames(astrocyteVStcell.de.markers))) + geom_point() + theme_minimal() + geom_text()
+p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
+
+
 ### patient 2 
 
 
