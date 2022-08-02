@@ -14,6 +14,7 @@ samples.names <- raw_counts[,1][-1]
 raw_counts$V1 <- NULL
 
 genesNames <- as.vector((unlist(raw_counts[1,])))
+all.genes <- genesNames
 raw_counts <- raw_counts[-1,]
 
 
@@ -43,10 +44,12 @@ mart <- useDataset("hsapiens_gene_ensembl",useMart("ensembl"))
 
 
 Glist <- getBM(filters = "ensembl_gene_id", attributes = c("ensembl_gene_id","hgnc_symbol","description"),values = genesNames,mart = mart)
-save(mart,Glist,file = "/home/josura/Projects/tesi/data/ensemblToGene.RData")
+allGlist <- getBM(filters = "ensembl_gene_id", attributes = c("ensembl_gene_id","hgnc_symbol","description"),values = all.genes,mart = mart)
+save(mart,Glist,allGlist,file = "/home/josura/Projects/tesi/data/ensemblToGene.RData")
 
 library(dplyr) 
 genesNames <- (Glist %>% distinct(ensembl_gene_id, .keep_all = TRUE))["hgnc_symbol"][,1]
+all.genes <- (allGlist %>% distinct(ensembl_gene_id, .keep_all = TRUE))["hgnc_symbol"][,1]
 
 raw_counts["genenames"] <- genesNames
 
@@ -147,6 +150,36 @@ astrocyteVStcell.de.markers$diffexpressed[astrocyteVStcell.de.markers$avg_log2FC
 #adding nemes as the rownames
 p <- ggplot(data=astrocyteVStcell.de.markers, aes(x=avg_log2FC, y=-log10(p_val), col=diffexpressed, label=rownames(astrocyteVStcell.de.markers))) + geom_point() + theme_minimal() + geom_text()
 p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
+
+
+
+## preparing the data to use phensim
+
+
+all.genes.filtered <- distinct(data.frame(all.genes[!all.genes %in% rownames(astrocyteVStcell.de.markers)]))
+
+all.genes.filtered <- all.genes.filtered$all.genes..all.genes..in..rownames.astrocyteVStcell.de.markers..
+
+diffExpressedSim <- data.frame(rep("NO",length(all.genes.filtered[!all.genes.filtered %in% rownames(astrocyteVStcell.de.markers)])),row.names = all.genes.filtered[!all.genes.filtered %in% rownames(astrocyteVStcell.de.markers)])
+colnames(diffExpressedSim) <- "diffexpressed"
+
+diffExpressedSim <- rbind(diffExpressedSim, select(astrocyteVStcell.de.markers,c("diffexpressed")))
+
+diffExpressedSim["hgnc_symbol"] <- rownames(diffExpressedSim)
+rownames(diffExpressedSim) <- NULL
+# querying for entrez_id
+entrez.list <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = diffExpressedSim["hgnc_symbol"],mart = mart)
+entrez.list <- (entrez.list %>% distinct(hgnc_symbol, .keep_all = TRUE))
+
+full.phensim.input <- merge(diffExpressedSim,select(entrez.list,c("hgnc_symbol","entrezgene_id")))
+
+full.phensim.input <- full.phensim.input[!is.na(full.phensim.input$entrezgene_id),]
+
+full.phensim.input$diffexpressed[full.phensim.input$diffexpressed == "UP"] <- "OVEREXPRESSION"
+full.phensim.input$diffexpressed[full.phensim.input$diffexpressed == "DOWN"] <- "UNDEREXPRESSION"
+
+write.table((select(full.phensim.input,c("entrezgene_id","diffexpressed")))[!full.phensim.input$diffexpressed=="NO",],
+            file='/home/josura/Projects/tesi/data/patient1ALL/full.phensim.input.tsv', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
 
 
 ### patient 2 
