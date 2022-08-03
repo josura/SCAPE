@@ -181,6 +181,9 @@ full.phensim.input$diffexpressed[full.phensim.input$diffexpressed == "DOWN"] <- 
 write.table((select(full.phensim.input,c("entrezgene_id","diffexpressed")))[!full.phensim.input$diffexpressed=="NO",],
             file='/home/josura/Projects/tesi/data/patient1ALL/full.phensim.input.tsv', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
 
+write.table((select(full.phensim.input,c("entrezgene_id","diffexpressed")))[full.phensim.input$diffexpressed=="NO",],
+            file='/home/josura/Projects/tesi/data/patient1ALL/fullNonExpressed.tsv', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
 
 ### patient 2 
 
