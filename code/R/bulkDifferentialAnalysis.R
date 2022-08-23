@@ -115,9 +115,34 @@ res$ensembl_gene_id <- rownames(res)
 
 joinedRes <- inner_join(as.data.frame(res), allGlist4)
 
-nonExpressedGenesPatient4 <- joinedRes[joinedRes$diffexpressed=="NO",] %>% 
-  select(hgnc_symbol,entrezgene_id,diffexpressed) #%>%
+allGenesTable <- joinedRes%>% 
+  select(hgnc_symbol,entrezgene_id,diffexpressed) %>%
   #distinct(entrezgene_id) %>% 
-  #na.omit(entrezgene_id)
+  na.omit()
+
+nonExpressedGenesPatient4 <- allGenesTable[allGenesTable$diffexpressed=="NO",] %>% 
+  distinct(entrezgene_id)
+
+
+underExpressedGenesPatient4 <- allGenesTable[allGenesTable$diffexpressed=="UP",] %>% 
+  distinct(entrezgene_id)
   
+overExpressedGenesPatient4 <- allGenesTable[allGenesTable$diffexpressed=="DOWN",] %>% 
+  distinct(entrezgene_id)
+
+
+
+write.table(joinedRes,
+            file='/home/josura/Projects/tesi/data/patient4ALL/bulk-allGenesDE.tsv', quote=FALSE, sep='\t', col.names = TRUE,row.names = FALSE)
+
+#only txt with entrezgene_id for phensim
+write.table(nonExpressedGenesPatient4,
+            file='/home/josura/Projects/tesi/data/patient4ALL/bulk-nonExpressed.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+write.table(overExpressedGenesPatient4,
+            file='/home/josura/Projects/tesi/data/patient4ALL/bulk-overexpressed.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+write.table(underExpressedGenesPatient4,
+            file='/home/josura/Projects/tesi/data/patient4ALL/bulk-downexpressed.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
 
