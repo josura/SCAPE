@@ -303,7 +303,7 @@ raw_counts4["genenames"] <- NULL
 
 
 rownames(raw_counts4) <- as.vector(unlist(genesNames.filtered4))
-colnames(raw_counts4) <- samples.names4
+colnames(raw_counts4) <- samplesNames4
 
 
 #using the entrezgene_id since ensemble_gene_ids contain non-standard characters like -
@@ -346,7 +346,7 @@ all.genes4 <- rownames(mydata4)
 mydata4 <- ScaleData(mydata4, features = all.genes4)
 
 all.markers4 <- FindAllMarkers(mydata4, only.pos = T, min.pct = 0.5, logfc.threshold = 0.4)
-all.markers4 <- FindConservedMarkers(mydata4, only.pos = T, min.pct = 0.5, logfc.threshold = 0.4)
+#all.markers4 <- FindConservedMarkers(mydata4, only.pos = T, min.pct = 0.5, logfc.threshold = 0.4)
 
 # mydata[["groups"]] <- 
 # patient1.markers <- FindConservedMarkers(mydata,grouping.var = "seurat_clusters", ident.1 = 0, verbose = FALSE)
@@ -369,7 +369,7 @@ sce4 <- as.SingleCellExperiment(DietSeurat(mydata4))
 hpca.main4 <- SingleR(test = sce4,assay.type.test = 1,ref = hpca.ref,labels = hpca.ref$label.main)
 hpca.fine4 <- SingleR(test = sce4,assay.type.test = 1,ref = hpca.ref,labels = hpca.ref$label.fine, aggr.ref = TRUE) #pseudobulk
 
-clusters <- as.numeric(levels(mydata4$seurat_clusters))[mydata4$seurat_clusters] +1
+clusters <- as.numeric(levels(mydata4$seurat_clusters))[mydata4$seurat_clusters]
 hpca.fine4.clusters <- SingleR(test = sce4,assay.type.test = 1,ref = hpca.ref,labels = hpca.ref$label.fine, aggr.ref = TRUE,clusters = mydata4$seurat_clusters) #with clusters previously found
 
 table(hpca.main4$pruned.labels)
@@ -378,10 +378,18 @@ table(hpca.fine4.clusters$pruned.labels)
 
 mydata4@meta.data$hpca.main <- hpca.main4$pruned.labels
 mydata4@meta.data$hpca.fine <- hpca.fine4$pruned.labels
-mydata4@meta.data$hpca.fine.clusters <- hpca.fine4.clusters$pruned.labels
 
-#mydata4 <- SetIdent(mydata4, value = "hpca.fine.clusters")
-mydata4 <- SetIdent(mydata4, value = "seurat_clusters")
+
+clusterLabels <-  hpca.fine4.clusters$pruned.labels
+
+mydata4@meta.data$hpca.fine.clusters[mydata4$seurat_clusters == 0] <- hpca.fine4.clusters$pruned.labels[1]
+mydata4@meta.data$hpca.fine.clusters[mydata4$seurat_clusters == 1] <- hpca.fine4.clusters$pruned.labels[2]
+mydata4@meta.data$hpca.fine.clusters[mydata4$seurat_clusters == 2] <- hpca.fine4.clusters$pruned.labels[3]
+
+
+
+
+mydata4 <- SetIdent(mydata4, value = "hpca.fine.clusters")
 DimPlot(mydata4, label = T , repel = T, label.size = 3) + NoLegend()
 
 ### DIFFERENTIAL EXPRESSION TESTING
@@ -397,17 +405,18 @@ p <- ggplot(data=astrocyteVStcell.de.markers, aes(x=avg_log2FC, y=-log10(p_val))
 p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
 
 # add a column of expression labelling
-astrocyteVStcell.de.markers$diffexpressed <- "NO"
+DCmonocyteVSiPS.de.markers$diffexpressed <- "NO"
 # if log2Foldchange > 0.6 and pvalue < 0.05, set as "UP" 
-astrocyteVStcell.de.markers$diffexpressed[astrocyteVStcell.de.markers$avg_log2FC > 0.6 & astrocyteVStcell.de.markers$p_val < 0.05] <- "UP"
+DCmonocyteVSiPS.de.markers$diffexpressed[DCmonocyteVSiPS.de.markers$avg_log2FC > 0.6 & DCmonocyteVSiPS.de.markers$p_val < 0.05] <- "UP"
 # if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
-astrocyteVStcell.de.markers$diffexpressed[astrocyteVStcell.de.markers$avg_log2FC < -0.6 & astrocyteVStcell.de.markers$p_val < 0.05] <- "DOWN"
+DCmonocyteVSiPS.de.markers$diffexpressed[DCmonocyteVSiPS.de.markers$avg_log2FC < -0.6 & DCmonocyteVSiPS.de.markers$p_val < 0.05] <- "DOWN"
 #adding nemes as the rownames
-p <- ggplot(data=astrocyteVStcell.de.markers, aes(x=avg_log2FC, y=-log10(p_val), col=diffexpressed, label=rownames(astrocyteVStcell.de.markers))) + geom_point() + theme_minimal() + geom_text()
+p <- ggplot(data=DCmonocyteVSiPS.de.markers, aes(x=avg_log2FC, y=-log10(p_val), col=diffexpressed, label=rownames(DCmonocyteVSiPS.de.markers))) + geom_point() + theme_minimal() + geom_text()
 p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
 
 
 ##also for clusters
+mydata4 <- SetIdent(mydata4, value = "seurat_clusters")
 cluster1vsCluster2.de.markers4 <- FindMarkers(mydata4, ident.1 = 1, ident.2 = 2)
 cluster1vsCluster2.de.markers4["hgnc_symbol"] <- rownames(cluster1vsCluster2.de.markers4) 
 cluster1vsCluster0.de.markers4 <- FindMarkers(mydata4, ident.1 = 1, ident.2 = 0)
