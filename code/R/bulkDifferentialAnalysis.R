@@ -116,7 +116,7 @@ res$ensembl_gene_id <- rownames(res)
 joinedRes <- inner_join(as.data.frame(res), allGlist4)
 
 allGenesTable <- joinedRes%>% 
-  select(hgnc_symbol,entrezgene_id,diffexpressed) %>%
+  dplyr::select(hgnc_symbol,entrezgene_id,diffexpressed) %>%
   #distinct(entrezgene_id) %>% 
   na.omit()
 
@@ -130,6 +130,9 @@ underExpressedGenesPatient4 <- allGenesTable[allGenesTable$diffexpressed=="UP",]
 overExpressedGenesPatient4 <- allGenesTable[allGenesTable$diffexpressed=="DOWN",] %>% 
   distinct(entrezgene_id)
 
+trueNonExpressed <- allGlist4 %>%
+  filter(!(entrezgene_id %in% Glist4$entrezgene_id)) %>%
+  dplyr::select(entrezgene_id)
 
 
 write.table(joinedRes,
@@ -145,4 +148,6 @@ write.table(overExpressedGenesPatient4,
 write.table(underExpressedGenesPatient4,
             file='/home/josura/Projects/tesi/data/patient4ALL/bulk-downexpressed.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
 
+write.table(trueNonExpressed,
+            file='/home/josura/Projects/tesi/data/patient4ALL/bulk-trueNonExpressed.tsv', quote=FALSE, sep='\t', col.names = TRUE,row.names = FALSE)
 
