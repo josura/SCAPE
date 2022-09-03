@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2022-09-02T23:07:20.416Z" agent="5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36" etag="IKegsEmseQNp29AFvImW" version="20.2.8" type="github">
+<mxfile host="app.diagrams.net" modified="2022-09-03T00:53:11.398Z" agent="5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36" etag="iPOJvjo3rLbRpkKVBwc-" version="20.2.8" type="github">
   <diagram id="wmLqz282Bcjy7ACeYt6-" name="Pagina-1">
-    <mxGraphModel dx="1920" dy="614" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2063" dy="694" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -271,6 +271,18 @@
         </mxCell>
         <mxCell id="k0WIdiqC_nadDopJg0VI-58" value="Embedding analysis&lt;br&gt;and activity" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="447" y="884" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="k0WIdiqC_nadDopJg0VI-59" value="" style="verticalLabelPosition=bottom;sketch=0;html=1;fillColor=#282828;strokeColor=none;verticalAlign=top;pointerEvents=1;align=center;shape=mxgraph.cisco_safe.people_places_things_icons.icon2;" vertex="1" parent="1">
+          <mxGeometry x="115" y="880" width="50" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="k0WIdiqC_nadDopJg0VI-60" value="" style="endArrow=classic;html=1;rounded=0;exitX=1.066;exitY=0.592;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="k0WIdiqC_nadDopJg0VI-59" target="k0WIdiqC_nadDopJg0VI-56">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="240" y="990" as="sourcePoint" />
+            <mxPoint x="290" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k0WIdiqC_nadDopJg0VI-61" value="Experts&lt;br&gt;evaluation of&amp;nbsp;&lt;br&gt;the results" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="180" y="851" width="90" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
