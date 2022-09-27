@@ -329,3 +329,200 @@ write.table(diffexpr.12h.PHENSIM.input,
             file='/home/josura/Projects/tesi/data/modernData/COVID/diffexpr12h-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
 
 
+### BULK differential analysis
+
+
+
+bulk.calu3.series1 <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/COVID/Calu3_polyA_series1_readcounts.txt",sep="\t")
+bulk.calu3.series2 <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/COVID/GSE148729_Calu3_polyA_series2_readcounts_rev.tsv",sep="\t")
+
+bulk.calu3.series1 <- bulk.calu3.series1[bulk.calu3.series1$gene_id %in% bulk.calu3.series2$gene_id,]
+bulk.calu3.series2 <- bulk.calu3.series2[bulk.calu3.series2$gene_id %in% bulk.calu3.series1$gene_id,]
+
+bulk.calu3 <- merge(x=bulk.calu3.series1,y=bulk.calu3.series2,by=c("gene_id","gene_name","length"))
+
+bulk.calu3.metadata <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/COVID/Calu3_polyA_metadata.tsv",sep="\t")
+
+colnames(bulk.calu3)
+
+library("DESeq2")
+
+#4h SarsCov2
+bulk.4h.calu3.metadata <- bulk.calu3.metadata[bulk.calu3.metadata$time == "4h" & (bulk.calu3.metadata$condition == "S2" | bulk.calu3.metadata$condition == "mock"),]
+
+bulk.4h.calu3 <- bulk.calu3 %>%
+  dplyr::select(gene_name,bulk.4h.calu3.metadata$name) %>%
+  group_by(gene_name) %>% 
+  summarise(across(everything(),sum))
+
+bulk.genes.4h.calu3 <- bulk.4h.calu3$gene_name
+bulk.4h.calu3 <- as.data.frame(bulk.4h.calu3)
+bulk.4h.calu3.genenames <- bulk.4h.calu3$gene_name 
+bulk.4h.calu3$gene_name <- NULL
+
+bulk.4h.calu3.metadata$condition <- as.factor(bulk.4h.calu3.metadata$condition) 
+
+# transform to integers since deseq2 needs it
+bulk.4h.calu3 <- sapply(bulk.4h.calu3,as.integer)
+rownames(bulk.4h.calu3) <- bulk.4h.calu3.genenames
+
+
+dds <- DESeqDataSetFromMatrix(countData = bulk.4h.calu3,
+                              colData = bulk.4h.calu3.metadata,
+                              design = ~ condition)
+
+# Run DESeq on this dataset
+dds <- DESeq(dds)
+# Store DESeq results in a new object
+res <- results(dds)
+# Check out results
+head(res)
+# Store a subset of results in a new object, in this case, the ones with an adjusted p-value of < 0.05
+res_sig <- subset(res, padj<.05)
+# Out of the subset we created above, subset the results that changed between conditions
+res_lfc <- subset(res_sig, abs(log2FoldChange) > 1) 
+head(res_lfc)
+
+
+# add a column of expression labelling
+res$diffexpressed <- "NO"
+# if log2Foldchange > 0.5 and pvalue < 0.05, set as "UP" 
+res$diffexpressed[res$log2FoldChange > 0.5 & res$padj < 0.05] <- "OVEREXPRESSION"
+# if log2Foldchange < -0.5 and pvalue < 0.05, set as "DOWN"
+res$diffexpressed[res$log2FoldChange < -0.5 & res$padj < 0.05] <- "UNDEREXPRESSION"
+
+mart <- useDataset("hsapiens_gene_ensembl",useMart("ensembl")) 
+
+Glist.4h.bulk <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = rownames(res),mart = mart)
+
+res["hgnc_symbol"] <- rownames(res)
+
+diffexpr.4h.bulk.final <- merge(x=Glist.4h.bulk,y=as.data.frame(res))
+
+diffexpr.4h.bulk.PHENSIM.input <- diffexpr.4h.bulk.final %>%
+  filter(diffexpressed =="OVEREXPRESSION" | diffexpressed == "UNDEREXPRESSION") %>%
+  dplyr::select(entrezgene_id,diffexpressed) %>%
+  unique()
+
+
+write.table(diffexpr.4h.bulk.PHENSIM.input,
+            file='/home/josura/Projects/tesi/data/modernData/COVID/diffexpr4h-bulk-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+#8h SarsCov2
+bulk.8h.calu3.metadata <- bulk.calu3.metadata[(bulk.calu3.metadata$time == "8h" | (bulk.calu3.metadata$time == "12h" & bulk.calu3.metadata$condition == "mock")) & (bulk.calu3.metadata$condition == "S2" | bulk.calu3.metadata$condition == "mock"),]
+
+bulk.8h.calu3 <- bulk.calu3 %>%
+  dplyr::select(gene_name,bulk.8h.calu3.metadata$name) %>%
+  group_by(gene_name) %>% 
+  summarise(across(everything(),sum))
+
+bulk.genes.8h.calu3 <- bulk.8h.calu3$gene_name
+bulk.8h.calu3 <- as.data.frame(bulk.8h.calu3)
+bulk.8h.calu3.genenames <- bulk.8h.calu3$gene_name 
+bulk.8h.calu3$gene_name <- NULL
+
+bulk.8h.calu3.metadata$condition <- as.factor(bulk.8h.calu3.metadata$condition) 
+
+# transform to integers since deseq2 needs it
+bulk.8h.calu3 <- sapply(bulk.8h.calu3,as.integer)
+rownames(bulk.8h.calu3) <- bulk.8h.calu3.genenames
+
+
+dds <- DESeqDataSetFromMatrix(countData = bulk.8h.calu3,
+                              colData = bulk.8h.calu3.metadata,
+                              design = ~ condition)
+
+# Run DESeq on this dataset
+dds <- DESeq(dds)
+# Store DESeq results in a new object
+res <- results(dds)
+# Check out results
+head(res)
+# Store a subset of results in a new object, in this case, the ones with an adjusted p-value of < 0.05
+res_sig <- subset(res, padj<.05)
+# Out of the subset we created above, subset the results that changed between conditions
+res_lfc <- subset(res_sig, abs(log2FoldChange) > 1) 
+head(res_lfc)
+
+
+# add a column of expression labelling
+res$diffexpressed <- "NO"
+# if log2Foldchange > 0.5 and pvalue < 0.05, set as "UP" 
+res$diffexpressed[res$log2FoldChange > 0.5 & res$padj < 0.05] <- "OVEREXPRESSION"
+# if log2Foldchange < -0.5 and pvalue < 0.05, set as "DOWN"
+res$diffexpressed[res$log2FoldChange < -0.5 & res$padj < 0.05] <- "UNDEREXPRESSION"
+
+Glist.8h.bulk <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = rownames(res),mart = mart)
+
+res["hgnc_symbol"] <- rownames(res)
+
+diffexpr.8h.bulk.final <- merge(x=Glist.8h.bulk,y=as.data.frame(res))
+
+diffexpr.8h.bulk.PHENSIM.input <- diffexpr.8h.bulk.final %>%
+  filter(diffexpressed =="OVEREXPRESSION" | diffexpressed == "UNDEREXPRESSION") %>%
+  dplyr::select(entrezgene_id,diffexpressed) %>%
+  unique()
+
+
+write.table(diffexpr.8h.bulk.PHENSIM.input,
+            file='/home/josura/Projects/tesi/data/modernData/COVID/diffexpr8h-bulk-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+
+#12h SarsCov2
+bulk.12h.calu3.metadata <- bulk.calu3.metadata[bulk.calu3.metadata$time == "12h" & (bulk.calu3.metadata$condition == "S2" | bulk.calu3.metadata$condition == "mock"),]
+
+bulk.12h.calu3 <- bulk.calu3 %>%
+  dplyr::select(gene_name,bulk.12h.calu3.metadata$name) %>%
+  group_by(gene_name) %>% 
+  summarise(across(everything(),sum))
+
+bulk.genes.12h.calu3 <- bulk.12h.calu3$gene_name
+bulk.12h.calu3 <- as.data.frame(bulk.12h.calu3)
+bulk.12h.calu3.genenames <- bulk.12h.calu3$gene_name 
+bulk.12h.calu3$gene_name <- NULL
+
+bulk.12h.calu3.metadata$condition <- as.factor(bulk.12h.calu3.metadata$condition) 
+
+# transform to integers since deseq2 needs it
+bulk.12h.calu3 <- sapply(bulk.12h.calu3,as.integer)
+rownames(bulk.12h.calu3) <- bulk.12h.calu3.genenames
+
+
+dds <- DESeqDataSetFromMatrix(countData = bulk.12h.calu3,
+                              colData = bulk.12h.calu3.metadata,
+                              design = ~ condition)
+
+# Run DESeq on this dataset
+dds <- DESeq(dds)
+# Store DESeq results in a new object
+res <- results(dds)
+# Check out results
+head(res)
+# Store a subset of results in a new object, in this case, the ones with an adjusted p-value of < 0.05
+res_sig <- subset(res, padj<.05)
+# Out of the subset we created above, subset the results that changed between conditions
+res_lfc <- subset(res_sig, abs(log2FoldChange) > 1) 
+head(res_lfc)
+
+
+# add a column of expression labelling
+res$diffexpressed <- "NO"
+# if log2Foldchange > 0.5 and pvalue < 0.05, set as "UP" 
+res$diffexpressed[res$log2FoldChange > 0.5 & res$padj < 0.05] <- "OVEREXPRESSION"
+# if log2Foldchange < -0.5 and pvalue < 0.05, set as "DOWN"
+res$diffexpressed[res$log2FoldChange < -0.5 & res$padj < 0.05] <- "UNDEREXPRESSION"
+
+Glist.12h.bulk <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = rownames(res),mart = mart)
+
+res["hgnc_symbol"] <- rownames(res)
+
+diffexpr.12h.bulk.final <- merge(x=Glist.12h.bulk,y=as.data.frame(res))
+
+diffexpr.12h.bulk.PHENSIM.input <- diffexpr.12h.bulk.final %>%
+  filter(diffexpressed =="OVEREXPRESSION" | diffexpressed == "UNDEREXPRESSION") %>%
+  dplyr::select(entrezgene_id,diffexpressed) %>%
+  unique()
+
+
+write.table(diffexpr.12h.bulk.PHENSIM.input,
+            file='/home/josura/Projects/tesi/data/modernData/COVID/diffexpr12h-bulk-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
