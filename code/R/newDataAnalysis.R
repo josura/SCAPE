@@ -2,6 +2,7 @@
 library(Seurat)
 library(Matrix)
 library(biomaRt)
+library(dplyr)
 
 
 raw_counts.calu3 <- read.table(file=paste0("/home/josura/Projects/tesi/data/tesi/modernData/COVID/","GSE148729_Calu3_polyA_series2_readcounts_rev.tsv"),sep="\t")
@@ -11,9 +12,20 @@ raw_counts.calu3 <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/CO
 #- all the cell lines counts (21 for this example)
 
 raw_counts.scrnaseq.calu3 <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/COVID/Calu3_scRNAseq_morethan1000genes_rawcounts_tr.txt",sep="\t")
-# for Seurat, genes in the columns, samples-cells in the rows
+# for Seurat, samples in the columns, genes in the rows
+rownames(raw_counts.scrnaseq.calu3) <- raw_counts.scrnaseq.calu3$cell_id
+raw_counts.scrnaseq.calu3$cell_id <- NULL
+raw_counts.scrnaseq.calu3 <- t(raw_counts.scrnaseq.calu3)
+
+#saving it as r file since the problems with the memory handling in Rstudio remains
+saveRDS(raw_counts.scrnaseq.calu3,file = "/home/josura/Projects/tesi/data/all-counts-calu3.rds")
+raw_counts.scrnaseq.calu3 <- readRDS("/home/josura/Projects/tesi/data/all-counts-calu3.rds")
+
 
 metadata.scrnaseq.calu3 <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/COVID/Calu3_scRNAseq_morethan1000genes_metadata.txt",sep="\t")
+
+
+metadata.scrnaseq.calu3 <- read.csv("/home/josura/Projects/tesi/data/tesi/modernData/COVID/Calu3_scRNAseq_metadata_full.txt")
 # the important value to separate the various cell types into groups is the "orig.ident" that identifies the origin experiment, 
 #the strain that identifies the patient condition {SARSCOV1,SARSCOV2,NA}, 
 #and the "infect" feature used to separate controls from infected cells
@@ -140,14 +152,8 @@ p <- ggplot() +
 #mock data
 
 p <- ggplot() +
-  ggtitle("SCov2 load for mock data different times") +
-  geom_point(data=sarscov2.uninf.metadataOth.calu3[sarscov2.uninf.metadataOth.calu3$type=="mock" & sarscov2.uninf.metadataOth.calu3$time=="4h",], aes(x=UMAPrna_1, y=UMAPrna_2, color=SCov2_Load)) +
-  scale_color_gradient(low="red", high="gray50") +
-  labs(colour="4h") +
-  new_scale_color() +
-  geom_point(data=sarscov2.uninf.metadataOth.calu3[sarscov2.uninf.metadataOth.calu3$type=="mock" & sarscov2.uninf.metadataOth.calu3$time=="12h",], aes(x=UMAPrna_1, y=UMAPrna_2, color=SCov2_Load)) +
-  scale_color_gradient(low="black", high="yellow") +
-  labs(colour="12h")
+  ggtitle("SCov2 visualization for mock data different times") +
+  geom_point(data=sarscov2.uninf.metadataOth.calu3[sarscov2.uninf.metadataOth.calu3$type=="mock",], aes(x=UMAPrna_1, y=UMAPrna_2, color=time))
 
 
 
@@ -172,26 +178,263 @@ seurat.sarscov2.calu3 <- CreateSeuratObject(counts = sarscov2.uninf.scrnaseq.cal
 
 rm(sarscov2.uninf.scrnaseq.calu3)
 
-### LOADING THE SEURAT OBJECT DIRECTLY
 
+### LOADING THE SEURAT OBJECT DIRECTLY
 saveRDS(seurat.sarscov2.uninf.calu3,file = "/home/josura/Projects/tesi/data/sarscov-seurat.rds")
 seurat.sarscov2.uninf.calu3 <- readRDS("/home/josura/Projects/tesi/data/sarscov-seurat.rds")
 
 
-### USELESS PART
-#visualization of sarscov2 clusters based on "viral RNA quantities" or whatever since I do not see anything explicit in the metadata
-seurat.sarscov2.calu3 <- ScaleData(seurat.sarscov2.calu3)
-seurat.sarscov2.calu3 <- FindVariableFeatures(seurat.sarscov2.calu3, selection.method = "vst", nfeatures = 40)
 
-seurat.sarscov2.calu3 <- RunPCA(seurat.sarscov2.calu3, npcs = 30, verbose = FALSE,approx=FALSE)
-seurat.sarscov2.calu3 <- RunUMAP(seurat.sarscov2.calu3,reduction = "pca",dims=1:30)
 
-seurat.sarscov2.calu3@reductions$umap@cell.embeddings #UMAP embeddings
-### END USELESS PART
+### VISUALIZATION OF REAL DATA PART
+#visualization of all cells clusters based on "viral RNA quantities" or whatever since I do not see anything explicit in the metadata
+
+#creating seurat object and saving it to load it directly(since R seems to have problems loading tables)
+
+seurat.all.calu3 <- CreateSeuratObject(counts = raw_counts.scrnaseq.calu3, min.cells = 3, min.genes = 200, project = "calu3_scRNAseq")
+
+saveRDS(seurat.all.calu3,file = "/home/josura/Projects/tesi/data/sarscov-seurat-all.rds")
+seurat.all.calu3 <- readRDS("/home/josura/Projects/tesi/data/sarscov-seurat-all.rds")
+
+seurat.all.calu3@meta.data$orig.ident <- metadata.scrnaseq.calu3$orig.ident
+DefaultAssay(seurat.all.calu3) <- "RNA"
+# filter the number of genes
+seurat.all.calu3.sub = seurat.all.calu3[, seurat.all.calu3$nFeature_RNA > 2000]
+# normalize
+seurat.all.calu3.sub = NormalizeData(seurat.all.calu3.sub)
+# scale
+seurat.all.calu3.sub = ScaleData(seurat.all.calu3.sub)
+# Find variable features
+seurat.all.calu3.sub = FindVariableFeatures(seurat.all.calu3.sub)
+# Run PCA
+seurat.all.calu3.sub = RunPCA(seurat.all.calu3.sub, verbose=FALSE)
+# Run UMAP on selected dims
+seurat.all.calu3.sub = RunUMAP(seurat.all.calu3.sub, dims = 1:20)
+
+
+SetIdent(seurat.all.calu3.sub,value="orig.ident")
+graph.all.sub <- DimPlot(seurat.all.calu3.sub, reduction = "umap", label = TRUE, repel = TRUE)
+
+
+UMAPembeddings.sub <- as.data.frame(seurat.all.calu3.sub@reductions$umap@cell.embeddings) #UMAP embeddings
+UMAPembeddings.sub$time <- seurat.all.calu3.sub$orig.ident
+UMAPembeddings.sub$time <- gsub(".{2}$","",UMAPembeddings.sub$time)
+UMAPembeddings.sub$time <- gsub(".*S1-","",UMAPembeddings.sub$time)
+UMAPembeddings.sub$time <- gsub(".*S2-","",UMAPembeddings.sub$time)
+UMAPembeddings.sub$time <- gsub(".*mock-","",UMAPembeddings.sub$time)
+
+ggplot() +
+  ggtitle("Visualization for mock data at different times(filtered)") +
+  geom_point(data=UMAPembeddings.sub[metadata.scrnaseq.calu3[metadata.scrnaseq.calu3$cell_id %in% rownames(UMAPembeddings.sub),]$strain=="nan",], aes(x=UMAP_1, y=UMAP_2, color=time))
+ggplot() +
+  ggtitle("Visualization for SarsCov1 data at different times(filtered)") +
+  geom_point(data=UMAPembeddings.sub[metadata.scrnaseq.calu3[metadata.scrnaseq.calu3$cell_id %in% rownames(UMAPembeddings.sub),]$strain=="SARSCoV1",], aes(x=UMAP_1, y=UMAP_2, color=time))
+ggplot() +
+  ggtitle("Visualization for SarsCov2 data different times(filtered)") +
+  geom_point(data=UMAPembeddings.sub[metadata.scrnaseq.calu3[metadata.scrnaseq.calu3$cell_id %in% rownames(UMAPembeddings.sub),]$strain=="SARSCoV2",], aes(x=UMAP_1, y=UMAP_2, color=time))
+
+
+
+
+
+# normalize, always gc after every evaluation if memory is "low"
+seurat.all.calu3 = NormalizeData(seurat.all.calu3)
+# scale
+seurat.all.calu3 = ScaleData(seurat.all.calu3)
+# Find variable features
+seurat.all.calu3 = FindVariableFeatures(seurat.all.calu3)
+# Run PCA
+seurat.all.calu3 = RunPCA(seurat.all.calu3, verbose=FALSE)
+# Run UMAP on selected dims
+seurat.all.calu3 = RunUMAP(seurat.all.calu3, dims = 1:30)
+
+SetIdent(seurat.all.calu3,value="orig.ident")
+graph.all <- DimPlot(seurat.all.calu3, reduction = "umap", label = TRUE, repel = TRUE)
+
+
+UMAPembeddings <- as.data.frame(seurat.all.calu3@reductions$umap@cell.embeddings) #UMAP embeddings
+UMAPembeddings$time <- metadata.scrnaseq.calu3$orig.ident
+UMAPembeddings$time <- gsub(".{2}$","",UMAPembeddings$time)
+UMAPembeddings$time <- gsub(".*S1-","",UMAPembeddings$time)
+UMAPembeddings$time <- gsub(".*S2-","",UMAPembeddings$time)
+UMAPembeddings$time <- gsub(".*mock-","",UMAPembeddings$time)
+  
+ggplot() +
+  ggtitle("Visualization for mock data at different times") +
+  geom_point(data=UMAPembeddings[metadata.scrnaseq.calu3$strain=="nan",], aes(x=UMAP_1, y=UMAP_2, color=time))
+ggplot() +
+  ggtitle("Visualization for SarsCov1 data at different times") +
+  geom_point(data=UMAPembeddings[metadata.scrnaseq.calu3$strain=="SARSCoV1",], aes(x=UMAP_1, y=UMAP_2, color=time))
+ggplot() +
+  ggtitle("Visualization for SarsCov2 data at different times") +
+  geom_point(data=UMAPembeddings[metadata.scrnaseq.calu3$strain=="SARSCoV2",], aes(x=UMAP_1, y=UMAP_2, color=time))
+
+metadata.scrnaseq.calu3$UMAP_1 <- UMAPembeddings$UMAP_1
+metadata.scrnaseq.calu3$UMAP_2 <- UMAPembeddings$UMAP_2
+metadata.scrnaseq.calu3$time <- UMAPembeddings$time
+
+
+seurat.sarscov2.uninf.calu3 <- ScaleData(seurat.sarscov2.uninf.calu3)
+seurat.sarscov2.uninf.calu3 <- FindVariableFeatures(seurat.sarscov2.uninf.calu3, selection.method = "vst", nfeatures = 40)
+
+seurat.sarscov2.uninf.calu3 <- RunPCA(seurat.sarscov2.uninf.calu3, npcs = 30, verbose = FALSE,approx=FALSE)
+seurat.sarscov2.uninf.calu3 <- RunUMAP(seurat.sarscov2.uninf.calu3,reduction = "pca",dims=1:30)
+
+seurat.sarscov2.uninf.calu3 <- FindNeighbors(seurat.sarscov2.uninf.calu3, reduction = "pca", dims = 1:30)
+seurat.sarscov2.uninf.calu3 <- FindClusters(seurat.sarscov2.uninf.calu3, resolution = 0.5)
+
+
+graph.sarscov2.uninf.clusters <- DimPlot(seurat.sarscov2.uninf.calu3, reduction = "umap", label = TRUE, repel = TRUE)
+
+
+
+###  CREATING THE CLUSTERS
+
+cluster.input <- sarscov2.uninf.metadataOth.calu3
+### END PART
 
 
 
 ### DIFFERENTIAL ANALYSIS
+
+#sarscov 1
+seurat.all.calu3 <- NormalizeData(seurat.all.calu3)
+seurat.all.calu3 <- FindVariableFeatures(seurat.all.calu3, selection.method = "vst", nfeatures = 2000)
+all.genes <- rownames(seurat.all.calu3)
+all.cells <- colnames(seurat.all.calu3)
+seurat.sarscov2.uninf.calu3 <- ScaleData(seurat.sarscov2.uninf.calu3, features = all.genes)
+
+all.markers <- FindAllMarkers(seurat.sarscov2.uninf.calu3, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
+
+
+FeaturePlot(mydata4, features = all.markers$gene, min.cutoff = "q9")
+#sarscov2.uninf.metadata.calu3$cell_id <- gsub("_","-",sarscov2.uninf.metadata.calu3$cell_id)
+### adding the time metadata to the seurat object
+filtered.metadata <- metadata.scrnaseq.calu3[metadata.scrnaseq.calu3$cell_id %in% all.cells,]
+seurat.all.calu3@meta.data$origin.experiment <- filtered.metadata$orig.ident
+
+
+seurat.all.calu3 <- SetIdent(seurat.all.calu3, value = "origin.experiment")
+table(seurat.all.calu3@meta.data$origin.experiment)
+
+
+## 4H
+diffexpr.4h <- FindMarkers(seurat.all.calu3, ident.1 = "Calu3-S1-4h-A", ident.2 = "Calu3-mock-4h-A")
+# view results
+head(diffexpr.4h)
+
+library(ggplot2)
+# The basic scatter plot: x is "log2FoldChange", y is "pvalue"
+ggplot(data=diffexpr.4h, aes(x=avg_log2FC, y=p_val)) + geom_point()
+p <- ggplot(data=diffexpr.4h, aes(x=avg_log2FC, y=-log10(p_val))) + geom_point()
+p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
+
+
+###preparing phensim input
+diffexpr.4h$diffexpressed <- "NO"
+# if log2Foldchange > 0.5 and pvalue < 0.05, set as "UP" 
+diffexpr.4h$diffexpressed[diffexpr.4h$avg_log2FC > 0.5 & diffexpr.4h$p_val < 0.05] <- "OVEREXPRESSION"
+# if log2Foldchange < -0.5 and pvalue < 0.05, set as "DOWN"
+diffexpr.4h$diffexpressed[diffexpr.4h$avg_log2FC < -0.5 & diffexpr.4h$p_val < 0.05] <- "UNDEREXPRESSION"
+
+
+
+mart <- useDataset("hsapiens_gene_ensembl",useMart("ensembl")) 
+
+
+Glist.4h <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = rownames(diffexpr.4h),mart = mart)
+
+diffexpr.4h["hgnc_symbol"] <- rownames(diffexpr.4h)
+
+diffexpr.4h.final <- merge(x=Glist.4h,y=diffexpr.4h)
+
+
+diffexpr.4h.PHENSIM.input <- diffexpr.4h.final %>%
+  filter(diffexpressed =="OVEREXPRESSION" | diffexpressed == "UNDEREXPRESSION") %>%
+  dplyr::select(entrezgene_id,diffexpressed) %>%
+  unique()
+
+
+
+write.table(diffexpr.4h.PHENSIM.input,
+            file='/home/josura/Projects/tesi/data/modernData/COVID/sarscov1-diffexpr4h-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+
+## 8H
+diffexpr.8h <- FindMarkers(seurat.all.calu3, ident.1 = "Calu3-S1-8h-A", ident.2 = "Calu3-mock-12h-A")
+# view results
+head(diffexpr.8h)
+
+# The basic scatter plot: x is "log2FoldChange", y is "pvalue"
+ggplot(data=diffexpr.8h, aes(x=avg_log2FC, y=p_val)) + geom_point()
+p <- ggplot(data=diffexpr.8h, aes(x=avg_log2FC, y=-log10(p_val))) + geom_point()
+p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
+
+
+###preparing phensim input
+diffexpr.8h$diffexpressed <- "NO"
+# if log2Foldchange > 0.5 and pvalue < 0.05, set as "UP" 
+diffexpr.8h$diffexpressed[diffexpr.8h$avg_log2FC > 0.5 & diffexpr.8h$p_val < 0.05] <- "OVEREXPRESSION"
+# if log2Foldchange < -0.5 and pvalue < 0.05, set as "DOWN"
+diffexpr.8h$diffexpressed[diffexpr.8h$avg_log2FC < -0.5 & diffexpr.8h$p_val < 0.05] <- "UNDEREXPRESSION"
+
+
+mart <- useDataset("hsapiens_gene_ensembl",useMart("ensembl")) 
+
+
+Glist.8h <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = rownames(diffexpr.8h),mart = mart)
+
+diffexpr.8h["hgnc_symbol"] <- rownames(diffexpr.8h)
+
+diffexpr.8h.final <- merge(x=Glist.8h,y=diffexpr.8h)
+
+diffexpr.8h.PHENSIM.input <- diffexpr.8h.final %>%
+  filter(diffexpressed =="OVEREXPRESSION" | diffexpressed == "UNDEREXPRESSION") %>%
+  dplyr::select(entrezgene_id,diffexpressed)%>%
+  unique()
+
+
+write.table(diffexpr.8h.PHENSIM.input,
+            file='/home/josura/Projects/tesi/data/modernData/COVID/sarscov1-diffexpr8h-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+
+
+
+## 12H
+diffexpr.12h <- FindMarkers(seurat.all.calu3, ident.1 = "Calu3-S1-12h-A", ident.2 = "Calu3-mock-12h-A")
+# view results
+head(diffexpr.12h)
+
+# The basic scatter plot: x is "log2FoldChange", y is "pvalue"
+ggplot(data=diffexpr.12h, aes(x=avg_log2FC, y=p_val)) + geom_point()
+p <- ggplot(data=diffexpr.12h, aes(x=avg_log2FC, y=-log10(p_val))) + geom_point()
+p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +  geom_hline(yintercept=-log10(0.05), col="red")
+
+
+###preparing phensim input
+diffexpr.12h$diffexpressed <- "NO"
+# if log2Foldchange > 0.5 and pvalue < 0.05, set as "UP" 
+diffexpr.12h$diffexpressed[diffexpr.12h$avg_log2FC > 0.5 & diffexpr.12h$p_val < 0.05] <- "OVEREXPRESSION"
+# if log2Foldchange < -0.5 and pvalue < 0.05, set as "DOWN"
+diffexpr.12h$diffexpressed[diffexpr.12h$avg_log2FC < -0.5 & diffexpr.12h$p_val < 0.05] <- "UNDEREXPRESSION"
+
+Glist.12h <- getBM(filters = "hgnc_symbol", attributes = c("ensembl_gene_id","hgnc_symbol","entrezgene_id","description"),values = rownames(diffexpr.12h),mart = mart)
+
+diffexpr.12h["hgnc_symbol"] <- rownames(diffexpr.12h)
+
+diffexpr.12h.final <- merge(x=Glist.12h,y=diffexpr.12h)
+
+diffexpr.12h.PHENSIM.input <- diffexpr.12h.final %>%
+  filter(diffexpressed =="OVEREXPRESSION" | diffexpressed == "UNDEREXPRESSION") %>%
+  dplyr::select(entrezgene_id,diffexpressed) %>%
+  unique()
+
+
+write.table(diffexpr.12h.PHENSIM.input,
+            file='/home/josura/Projects/tesi/data/modernData/COVID/sarscov1-diffexpr12h-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+
+#sarscov 2
 seurat.sarscov2.uninf.calu3 <- NormalizeData(seurat.sarscov2.uninf.calu3)
 seurat.sarscov2.uninf.calu3 <- FindVariableFeatures(seurat.sarscov2.uninf.calu3, selection.method = "vst", nfeatures = 2000)
 all.genes <- rownames(seurat.sarscov2.uninf.calu3)
