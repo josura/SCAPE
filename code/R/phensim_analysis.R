@@ -68,6 +68,14 @@ phensim_output.sarscov1.4h.reactome$strain <- "sarscov1"
 phensim_output.sarscov1.8h.reactome$strain <- "sarscov1"
 phensim_output.sarscov1.12h.reactome$strain <- "sarscov1"
 
+### TGFb and autophagy pathways
+
+phensim_output.sarscov1.4h.reactome.autophagy <- phensim_output.sarscov1.4h.reactome[grepl("tgfb", phensim_output.sarscov1.4h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("autophagy", phensim_output.sarscov1.4h.reactome$Pathway.Name,ignore.case = TRUE) ,]
+
+autophagy.list <- unique(phensim_output.sarscov1.4h.reactome.autophagy$X..Pathway.Id)
+autophagy.names <- unique(phensim_output.sarscov1.4h.reactome.autophagy$Pathway.Name)
+autophagy.list <- gsub("-",".",interferons.list)
+
 ### interferons pathways
 
 phensim_output.sarscov1.4h.reactome.interferon <- phensim_output.sarscov1.4h.reactome[grepl("interferon", phensim_output.sarscov1.4h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("ifn", phensim_output.sarscov1.4h.reactome$Pathway.Name,ignore.case = TRUE) ,]
@@ -151,12 +159,52 @@ full.data.metadata$time <- c(rep("4h",times = length(interferons.list)),rep("8h"
 
 full.data.metadata$strain <- c(rep("sarscov1",times = length(interferons.list)*3),
                                rep("sarscov2",times = length(interferons.list)*3))
+
+full.data.metadata$names <- rep(autophagy.names,times=6)
 full.data.matrix.nonzerocols <- full.data.matrix %>%
   #dplyr::select(where(~ any(. != 0 )))
   select_if(~!all(is.na(.) | . == 0))
 write.csv(full.data.matrix.nonzerocols,file="/home/josura/Projects/tesi/data/modernData/COVID/calu3-sarscov-interferons-PHENSIM-avg_perturbation_genes-filtered.csv")
 write.csv(full.data.matrix,file="/home/josura/Projects/tesi/data/modernData/COVID/calu3-sarscov-interferons-PHENSIM-avg_perturbation_genes.csv")
 write.csv(full.data.metadata,file="/home/josura/Projects/tesi/data/modernData/COVID/interferons-PHENSIM-embeddings-metadata.csv")
+
+## ONLY autophagyS
+phensim_output.sarscov1.4h.reactome.pathwayembed.autophagys <-  create.phensim.pathways.embeddings(phensim_output.sarscov1.4h.reactome[grepl("autophagy", phensim_output.sarscov1.4h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("tgfb", phensim_output.sarscov1.4h.reactome$Pathway.Name,ignore.case = TRUE) ,])
+rownames(phensim_output.sarscov1.4h.reactome.pathwayembed.autophagys) <- paste(autophagy.list, "-4h-sarscov1", sep="")
+
+phensim_output.sarscov1.8h.reactome.pathwayembed.autophagys <-  create.phensim.pathways.embeddings(phensim_output.sarscov1.8h.reactome[grepl("autophagy", phensim_output.sarscov1.8h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("tgfb", phensim_output.sarscov1.8h.reactome$Pathway.Name,ignore.case = TRUE) ,])
+rownames(phensim_output.sarscov1.8h.reactome.pathwayembed.autophagys) <- paste(autophagy.list, "-8h-sarscov1", sep="")
+
+phensim_output.sarscov1.12h.reactome.pathwayembed.autophagys <- create.phensim.pathways.embeddings(phensim_output.sarscov1.12h.reactome[grepl("autophagy", phensim_output.sarscov1.12h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("tgfb", phensim_output.sarscov1.12h.reactome$Pathway.Name,ignore.case = TRUE) ,])
+rownames(phensim_output.sarscov1.12h.reactome.pathwayembed.autophagys) <- paste(autophagy.list, "-12h-sarscov1", sep="")
+
+
+phensim_output.sarscov2.4h.reactome.pathwayembed.autophagys <-  create.phensim.pathways.embeddings(phensim_output.sarscov2.4h.reactome[grepl("autophagy", phensim_output.sarscov2.4h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("tgfb", phensim_output.sarscov2.4h.reactome$Pathway.Name,ignore.case = TRUE) ,])
+rownames(phensim_output.sarscov2.4h.reactome.pathwayembed.autophagys) <- paste(autophagy.list, "-4h-sarscov2", sep="")
+
+phensim_output.sarscov2.8h.reactome.pathwayembed.autophagys <-  create.phensim.pathways.embeddings(phensim_output.sarscov2.8h.reactome[grepl("autophagy", phensim_output.sarscov2.8h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("tgfb", phensim_output.sarscov2.8h.reactome$Pathway.Name,ignore.case = TRUE) ,])
+rownames(phensim_output.sarscov2.8h.reactome.pathwayembed.autophagys) <- paste(autophagy.list, "-8h-sarscov2", sep="")
+
+phensim_output.sarscov2.12h.reactome.pathwayembed.autophagys <- create.phensim.pathways.embeddings(phensim_output.sarscov2.12h.reactome[grepl("autophagy", phensim_output.sarscov2.12h.reactome$Pathway.Name,ignore.case = TRUE) | grepl("tgfb", phensim_output.sarscov2.12h.reactome$Pathway.Name,ignore.case = TRUE) ,])
+rownames(phensim_output.sarscov2.12h.reactome.pathwayembed.autophagys) <- paste(autophagy.list, "-12h-sarscov2", sep="")
+
+full.data.matrix <- bind_rows(phensim_output.sarscov1.4h.reactome.pathwayembed.autophagys, phensim_output.sarscov1.8h.reactome.pathwayembed.autophagys, phensim_output.sarscov1.12h.reactome.pathwayembed.autophagys,
+                              phensim_output.sarscov2.4h.reactome.pathwayembed.autophagys, phensim_output.sarscov2.8h.reactome.pathwayembed.autophagys, phensim_output.sarscov2.12h.reactome.pathwayembed.autophagys)
+full.data.metadata <- data.frame(rownames(full.data.matrix),row.names = rownames(full.data.matrix))
+colnames(full.data.metadata) <- "names"
+
+full.data.metadata$time <- c(rep("4h",times = length(autophagy.list)),rep("8h",times = length(autophagy.list)),rep("12h",times = length(autophagy.list)),
+                             rep("4h",times = length(autophagy.list)),rep("8h",times = length(autophagy.list)),rep("12h",times = length(autophagy.list)))
+
+full.data.metadata$strain <- c(rep("sarscov1",times = length(autophagy.list)*3),
+                               rep("sarscov2",times = length(autophagy.list)*3))
+full.data.matrix.nonzerocols <- full.data.matrix %>%
+  #dplyr::select(where(~ any(. != 0 )))
+  select_if(~!all(is.na(.) | . == 0))
+write.csv(full.data.matrix.nonzerocols,file="/home/josura/Projects/tesi/data/modernData/COVID/calu3-sarscov-autophagys-PHENSIM-avg_perturbation_genes-filtered.csv")
+write.csv(full.data.matrix,file="/home/josura/Projects/tesi/data/modernData/COVID/calu3-sarscov-autophagys-PHENSIM-avg_perturbation_genes.csv")
+write.csv(full.data.metadata,file="/home/josura/Projects/tesi/data/modernData/COVID/autophagys-PHENSIM-embeddings-metadata.csv")
+
 
 ### NULL models
 phensim_output.sarscov1.4h.reactome.matrix <- t(read.csv("/home/josura/Projects/tesi/data/modernData/COVID/sarscov1-4h/3591-sarscov1-4h-calu3-reactome-pathway-matrix.tsv",sep="\t"))
@@ -321,26 +369,244 @@ full.data.metadata$UMAPpathway_1 <-  full.data.matrix.umap.model.dist$layout[,1]
 full.data.metadata$UMAPpathway_2 <-  full.data.matrix.umap.model.dist$layout[,2]
 
 
-#see pathways activity scores
+#see pathways and genes activity scores
 
+#4h
+##sarscov2
 phensim_output.sarscov2.4h.reactome.endpoints <- phensim_output.sarscov2.4h.reactome %>% group_by(X..Pathway.Id) %>%
   arrange(Is.Endpoint) %>%
   slice(1) %>% ungroup
-
 
 phensim_output.sarscov2.4h.endpoints.reactome.ordered <- phensim_output.sarscov2.4h.reactome.endpoints %>%
   arrange(desc(Average.Pathway.Perturbation))
 
 
-pathways.sarscov2.mostperturbed <- phensim_output.sarscov2.4h.endpoints.reactome.ordered[phensim_output.sarscov2.4h.endpoints.reactome.ordered$Average.Pathway.Perturbation]
-
-
 phensim_output.sarscov2.4h.endpoints.significant.ordered <- phensim_output.sarscov2.4h.endpoints %>%
   filter(Pathway.Adjusted.p.value < 0.05) %>% 
   arrange(Pathway.Activity.Score)
+##sarscov1
+phensim_output.sarscov1.4h.reactome.endpoints <- phensim_output.sarscov1.4h.reactome %>% group_by(X..Pathway.Id) %>%
+  arrange(Is.Endpoint) %>%
+  slice(1) %>% ungroup
+
+phensim_output.sarscov1.4h.endpoints.reactome.ordered <- phensim_output.sarscov1.4h.reactome.endpoints %>%
+  arrange(desc(Average.Pathway.Perturbation))
 
 
-# Change the colors manually
+pathways.sarscov1.mostperturbed <- phensim_output.sarscov1.4h.endpoints.reactome.ordered[phensim_output.sarscov1.4h.endpoints.reactome.ordered$Average.Pathway.Perturbation]
+
+
+phensim_output.sarscov1.4h.endpoints.significant.ordered <- phensim_output.sarscov1.4h.endpoints %>%
+  filter(Pathway.Adjusted.p.value < 0.05) %>% 
+  arrange(Pathway.Activity.Score)
+
+## data binded
+pathways.mostperturbed.4h <- bind_rows(phensim_output.sarscov2.4h.reactome.endpoints,phensim_output.sarscov1.4h.reactome.endpoints)
+
+pathways.mostperturbed.4h.ordered <- pathways.mostperturbed.4h %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+###pathways
+pathways.mostperturbed.4h.lesserfirstquartile <- pathways.mostperturbed.4h.ordered[pathways.mostperturbed.4h.ordered$Average.Pathway.Perturbation < quantile(pathways.mostperturbed.4h.ordered$Average.Pathway.Perturbation,probs = c(0.25)),]
+pathways.mostperturbed.4h.higherthirdquartile <- pathways.mostperturbed.4h.ordered[pathways.mostperturbed.4h.ordered$Average.Pathway.Perturbation > quantile(pathways.mostperturbed.4h.ordered$Average.Pathway.Perturbation,probs = c(0.75)),]
+### genes
+genes.mostperturbed.4h.all <- bind_rows(phensim_output.sarscov1.4h.reactome,phensim_output.sarscov2.4h.reactome)
+genes.mostperturbed.4h.lesserfirstquartile <- genes.mostperturbed.4h.all[genes.mostperturbed.4h.all$Average.Node.Perturbation < quantile(genes.mostperturbed.4h.all$Average.Node.Perturbation,probs = c(0.25)),]
+genes.mostperturbed.4h.higherthirdquartile <- genes.mostperturbed.4h.all[genes.mostperturbed.4h.all$Average.Node.Perturbation > quantile(genes.mostperturbed.4h.all$Average.Node.Perturbation,probs = c(0.75)),]
+
+#8h
+##sarscov2
+phensim_output.sarscov2.8h.reactome.endpoints <- phensim_output.sarscov2.8h.reactome %>% group_by(X..Pathway.Id) %>%
+  arrange(Is.Endpoint) %>%
+  slice(1) %>% ungroup
+
+phensim_output.sarscov2.8h.endpoints.reactome.ordered <- phensim_output.sarscov2.8h.reactome.endpoints %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+
+phensim_output.sarscov2.8h.endpoints.significant.ordered <- phensim_output.sarscov2.8h.endpoints %>%
+  filter(Pathway.Adjusted.p.value < 0.05) %>% 
+  arrange(Pathway.Activity.Score)
+##sarscov1
+phensim_output.sarscov1.8h.reactome.endpoints <- phensim_output.sarscov1.8h.reactome %>% group_by(X..Pathway.Id) %>%
+  arrange(Is.Endpoint) %>%
+  slice(1) %>% ungroup
+
+phensim_output.sarscov1.8h.endpoints.reactome.ordered <- phensim_output.sarscov1.8h.reactome.endpoints %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+
+pathways.sarscov1.mostperturbed <- phensim_output.sarscov1.8h.endpoints.reactome.ordered[phensim_output.sarscov1.8h.endpoints.reactome.ordered$Average.Pathway.Perturbation]
+
+
+phensim_output.sarscov1.8h.endpoints.significant.ordered <- phensim_output.sarscov1.8h.endpoints %>%
+  filter(Pathway.Adjusted.p.value < 0.05) %>% 
+  arrange(Pathway.Activity.Score)
+
+## data binded
+pathways.mostperturbed.8h <- bind_rows(phensim_output.sarscov2.8h.reactome.endpoints,phensim_output.sarscov1.8h.reactome.endpoints)
+
+pathways.mostperturbed.8h.ordered <- pathways.mostperturbed.8h %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+###pathways
+pathways.mostperturbed.8h.lesserfirstquartile <- pathways.mostperturbed.8h.ordered[pathways.mostperturbed.8h.ordered$Average.Pathway.Perturbation < quantile(pathways.mostperturbed.8h.ordered$Average.Pathway.Perturbation,probs = c(0.25)),]
+pathways.mostperturbed.8h.higherthirdquartile <- pathways.mostperturbed.8h.ordered[pathways.mostperturbed.8h.ordered$Average.Pathway.Perturbation > quantile(pathways.mostperturbed.8h.ordered$Average.Pathway.Perturbation,probs = c(0.75)),]
+### genes
+genes.mostperturbed.8h.all <- bind_rows(phensim_output.sarscov1.8h.reactome,phensim_output.sarscov2.8h.reactome)
+genes.mostperturbed.8h.lesserfirstquartile <- genes.mostperturbed.8h.all[genes.mostperturbed.8h.all$Average.Node.Perturbation < quantile(genes.mostperturbed.8h.all$Average.Node.Perturbation,probs = c(0.25)),]
+genes.mostperturbed.8h.higherthirdquartile <- genes.mostperturbed.8h.all[genes.mostperturbed.8h.all$Average.Node.Perturbation > quantile(genes.mostperturbed.8h.all$Average.Node.Perturbation,probs = c(0.75)),]
+
+
+
+#12h
+##sarscov2
+phensim_output.sarscov2.12h.reactome.endpoints <- phensim_output.sarscov2.12h.reactome %>% group_by(X..Pathway.Id) %>%
+  arrange(Is.Endpoint) %>%
+  slice(1) %>% ungroup
+
+phensim_output.sarscov2.12h.endpoints.reactome.ordered <- phensim_output.sarscov2.12h.reactome.endpoints %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+
+phensim_output.sarscov2.12h.endpoints.significant.ordered <- phensim_output.sarscov2.12h.endpoints %>%
+  filter(Pathway.Adjusted.p.value < 0.05) %>% 
+  arrange(Pathway.Activity.Score)
+##sarscov1
+phensim_output.sarscov1.12h.reactome.endpoints <- phensim_output.sarscov1.12h.reactome %>% group_by(X..Pathway.Id) %>%
+  arrange(Is.Endpoint) %>%
+  slice(1) %>% ungroup
+
+phensim_output.sarscov1.12h.endpoints.reactome.ordered <- phensim_output.sarscov1.12h.reactome.endpoints %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+
+pathways.sarscov1.mostperturbed <- phensim_output.sarscov1.12h.endpoints.reactome.ordered[phensim_output.sarscov1.12h.endpoints.reactome.ordered$Average.Pathway.Perturbation]
+
+
+phensim_output.sarscov1.12h.endpoints.significant.ordered <- phensim_output.sarscov1.12h.endpoints %>%
+  filter(Pathway.Adjusted.p.value < 0.05) %>% 
+  arrange(Pathway.Activity.Score)
+
+## data binded
+pathways.mostperturbed.12h <- bind_rows(phensim_output.sarscov2.12h.reactome.endpoints,phensim_output.sarscov1.12h.reactome.endpoints)
+
+pathways.mostperturbed.12h.ordered <- pathways.mostperturbed.12h %>%
+  arrange(desc(Average.Pathway.Perturbation))
+
+###pathways
+pathways.mostperturbed.12h.lesserfirstquartile <- pathways.mostperturbed.12h.ordered[pathways.mostperturbed.12h.ordered$Average.Pathway.Perturbation < quantile(pathways.mostperturbed.12h.ordered$Average.Pathway.Perturbation,probs = c(0.25)),]
+pathways.mostperturbed.12h.higherthirdquartile <- pathways.mostperturbed.12h.ordered[pathways.mostperturbed.12h.ordered$Average.Pathway.Perturbation > quantile(pathways.mostperturbed.12h.ordered$Average.Pathway.Perturbation,probs = c(0.75)),]
+### genes
+genes.mostperturbed.12h.all <- bind_rows(phensim_output.sarscov1.12h.reactome,phensim_output.sarscov2.12h.reactome)
+genes.mostperturbed.12h.lesserfirstquartile <- genes.mostperturbed.12h.all[genes.mostperturbed.12h.all$Average.Node.Perturbation < quantile(genes.mostperturbed.12h.all$Average.Node.Perturbation,probs = c(0.25)),]
+genes.mostperturbed.12h.higherthirdquartile <- genes.mostperturbed.12h.all[genes.mostperturbed.12h.all$Average.Node.Perturbation > quantile(genes.mostperturbed.12h.all$Average.Node.Perturbation,probs = c(0.75)),]
+
+
+# load Venn diagram package
+install.packages("VennDiagram")
+library("VennDiagram")
+
+
+
+# create pairwise Venn diagram
+
+create.venndiagram.pairwise <- function(pathways){
+  area.sarscov1 <- dim(pathways[pathways$strain == "sarscov1",])[1]
+  area.sarscov2 <- dim(pathways[pathways$strain == "sarscov2",])[1]
+  grid.newpage()
+  draw.pairwise.venn(area1=area.sarscov1, 
+                     area2=area.sarscov2,
+                     cross.area=length(intersect(pathways[pathways$strain == "sarscov1",]$X..Pathway.Id,
+                                                 pathways[pathways$strain == "sarscov2",]$X..Pathway.Id)),
+                     category=c("sarscov1","sarscov2"),fill=c("Red","Yellow"))
+}
+
+## 4h
+
+create.venndiagram.pairwise(pathways.mostperturbed.4h.lesserfirstquartile)
+create.venndiagram.pairwise(pathways.mostperturbed.4h.higherthirdquartile)
+
+create.venndiagram.pairwise(genes.mostperturbed.4h.lesserfirstquartile)
+create.venndiagram.pairwise(genes.mostperturbed.4h.higherthirdquartile)
+
+
+## 8h
+create.venndiagram.pairwise(pathways.mostperturbed.8h.lesserfirstquartile)
+create.venndiagram.pairwise(pathways.mostperturbed.8h.higherthirdquartile)
+
+create.venndiagram.pairwise(genes.mostperturbed.8h.lesserfirstquartile)
+create.venndiagram.pairwise(genes.mostperturbed.8h.higherthirdquartile)
+
+## 12h
+create.venndiagram.pairwise(pathways.mostperturbed.12h.lesserfirstquartile)
+create.venndiagram.pairwise(pathways.mostperturbed.12h.higherthirdquartile)
+
+
+create.venndiagram.pairwise(genes.mostperturbed.12h.lesserfirstquartile)
+create.venndiagram.pairwise(genes.mostperturbed.12h.higherthirdquartile)
+
+
+#box plots
+library(ggplot2)
+
+# create a data frame
+all.pathways.avgperturbation <- bind_rows(pathways.mostperturbed.4h,
+                                          pathways.mostperturbed.8h,
+                                          pathways.mostperturbed.12h)
+variety=all.pathways.avgperturbation$time
+strain=all.pathways.avgperturbation$strain
+Average.Pathway.Perturbation=all.pathways.avgperturbation$Average.Pathway.Perturbation
+data=data.frame(variety, strain ,  Average.Pathway.Perturbation)
+
+
+
+# grouped boxplot
+times <- factor(all.pathways.avgperturbation$time, level = c("4h", "8h", "12h"))
+
+ggplot(data, aes(x=times, y=Average.Pathway.Perturbation, fill=strain)) + 
+  geom_boxplot()
+
+
+# most 20 perturbed pathways for sarscov2
+#12h
+##sarscov2
+most20perturbed.sarscov2.12h <- phensim_output.sarscov2.12h.endpoints.reactome.ordered[1:20,]
+
+##sarscov1
+most20perturbed.sarscov2.12h.all <-bind_rows(most20perturbed.sarscov2.12h, phensim_output.sarscov1.12h.endpoints.reactome.ordered[phensim_output.sarscov1.12h.endpoints.reactome.ordered$X..Pathway.Id %in% most20perturbed.sarscov2.12h$X..Pathway.Id,])
+#8h
+##sarscov2
+most20perturbed.sarscov2.12h.all <- bind_rows(most20perturbed.sarscov2.12h.all, phensim_output.sarscov2.8h.endpoints.reactome.ordered[phensim_output.sarscov2.8h.endpoints.reactome.ordered$X..Pathway.Id %in% most20perturbed.sarscov2.12h.all$X..Pathway.Id,])
+
+##sarscov1
+most20perturbed.sarscov2.12h.all <-bind_rows(most20perturbed.sarscov2.12h.all, phensim_output.sarscov1.8h.endpoints.reactome.ordered[phensim_output.sarscov1.8h.endpoints.reactome.ordered$X..Pathway.Id %in% most20perturbed.sarscov2.12h.all$X..Pathway.Id,])
+#4h
+##sarscov2
+most20perturbed.sarscov2.12h.all <- bind_rows(most20perturbed.sarscov2.12h.all, phensim_output.sarscov2.4h.endpoints.reactome.ordered[phensim_output.sarscov2.4h.endpoints.reactome.ordered$X..Pathway.Id %in% most20perturbed.sarscov2.12h.all$X..Pathway.Id,])
+
+##sarscov1
+most20perturbed.sarscov2.12h.all <-bind_rows(most20perturbed.sarscov2.12h.all, phensim_output.sarscov1.4h.endpoints.reactome.ordered[phensim_output.sarscov1.4h.endpoints.reactome.ordered$X..Pathway.Id %in% most20perturbed.sarscov2.12h.all$X..Pathway.Id,])
+
+
+
+variety=most20perturbed.sarscov2.12h.all$time
+strain=most20perturbed.sarscov2.12h.all$strain
+pathway.name <- most20perturbed.sarscov2.12h.all$Pathway.Name
+Average.Pathway.Perturbation <- most20perturbed.sarscov2.12h.all$Average.Pathway.Perturbation
+data=data.frame(variety, strain ,  pathway.name,Average.Pathway.Perturbation)
+
+
+
+# grouped boxplot
+times <- factor(variety, level = c("4h", "8h", "12h"))
+pathways <- factor(pathway.name, level=most20perturbed.sarscov2.12h$Pathway.Name)
+
+ggplot(data, aes(x=times, y=Average.Pathway.Perturbation, color=strain)) + 
+  geom_point() +
+  facet_wrap(facets = vars(pathway.name))
+
+  # Change the colors manually
 p <- ggplot(data=phensim_output.sarscov2.4h.endpoints.significant.ordered, aes(x=dose, y=len, fill=supp)) +
   geom_bar(stat="identity", color="black", position=position_dodge())+
   theme_minimal()
