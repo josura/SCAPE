@@ -1,7 +1,6 @@
 
 library(Seurat)
 library(Matrix)
-library(biomaRt)
 library(dplyr)
 
 
@@ -769,3 +768,5 @@ diffexpr.12h.bulk.PHENSIM.input <- diffexpr.12h.bulk.final %>%
 
 write.table(diffexpr.12h.bulk.PHENSIM.input,
             file='/home/josura/Projects/tesi/data/modernData/COVID/diffexpr12h-bulk-PHENSIMinput.txt', quote=FALSE, sep='\t', col.names = FALSE,row.names = FALSE)
+
+
